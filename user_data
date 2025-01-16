@@ -1,0 +1,15 @@
+resource "aws_instance" "openvpn_server" {
+  ami           = "ami-0abcdef1234567890"
+  instance_type = "t2.micro"
+
+  user_data = <<-EOF
+    #!/bin/bash
+    wget -O /tmp/setup_openvpn.sh https://raw.githubusercontent.com/ctinnil/remote-site/refs/heads/main/setup_openvpn.sh
+    chmod +x /tmp/setup_openvpn.sh
+    /tmp/setup_openvpn.sh
+  EOF
+
+  tags = {
+    Name = "OpenVPN Server"
+  }
+}

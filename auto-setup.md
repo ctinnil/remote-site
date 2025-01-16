@@ -5,3 +5,9 @@ runcmd:
   - chmod +x /tmp/setup_openvpn.sh
   - /tmp/setup_openvpn.sh
 ```
+
+After deployment, the client configuration (client.ovpn) will be available at:
+
+```
+/etc/openvpn/client-configs/client.ovpn
+```

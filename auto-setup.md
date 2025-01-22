@@ -9,5 +9,5 @@ runcmd:
 After deployment, the client configuration (client.ovpn) will be available at:
 
 ```
-/etc/openvpn/client-configs/client.ovpn
+/etc/openvpn/client.ovpn
 ```

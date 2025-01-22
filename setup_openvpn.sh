@@ -1,95 +1,76 @@
 #!/bin/bash
 
+# Variables
+OPENVPN_DIR="/etc/openvpn"
+KEY_DIR="${OPENVPN_DIR}/keys"
+
 # Automatically fetch the server's public IP
 SERVER_IP=$(curl -s ifconfig.io)
 
-# Variables
-VPN_SUBNET="10.8.0.0"
-VPN_NETMASK="255.255.255.0"
-CLIENT_NAME="client"
-OPENVPN_DIR="/etc/openvpn"
-KEY_DIR="${OPENVPN_DIR}/keys"
-OUTPUT_DIR="${OPENVPN_DIR}/client-configs"
+# Fetch the public IP
+PUBLIC_IP=$(curl -s ifconfig.io)
 
-# Install OpenVPN and dependencies
-apt update
-apt install -y openvpn easy-rsa iptables-persistent
+# Automatically detect the public-facing network interface
+INTERFACE=$(ip route | grep default | awk '{print $5}')
 
-# Set up easy-rsa
-make-cadir ~/easy-rsa
-cd ~/easy-rsa
-./easyrsa init-pki
-./easyrsa build-ca nopass
-./easyrsa gen-req server nopass
-./easyrsa sign-req server server
-./easyrsa gen-dh
-./easyrsa gen-req ${CLIENT_NAME} nopass
-./easyrsa sign-req client ${CLIENT_NAME}
+# Update system, install OpenVPN and dependencies 
+sudo apt update && sudo apt upgrade -y && sudo apt install openvpn iptables-persistent -y
 
-# Copy certificates and keys
-mkdir -p ${KEY_DIR}
-cp pki/ca.crt pki/issued/server.crt pki/private/server.key pki/dh.pem ${KEY_DIR}
-cp pki/issued/${CLIENT_NAME}.crt pki/private/${CLIENT_NAME}.key ${KEY_DIR}
+# Genrate static key 
+openvpn --genkey secret ~/static.key
+sudo mv ~/static.key ${OPENVPN_DIR}/static.key
 
+# Set correct permissions
+sudo chown root:root ${OPENVPN_DIR}/static.key
+sudo chmod 600 ${OPENVPN_DIR}/static.key
+
+#sudo nano /etc/openvpn/server.conf
 # Generate server.conf
 cat <<EOF >${OPENVPN_DIR}/server.conf
-port 1194
-proto udp
 dev tun
-ca ${KEY_DIR}/ca.crt
-cert ${KEY_DIR}/server.crt
-key ${KEY_DIR}/server.key
-dh ${KEY_DIR}/dh.pem
-server ${VPN_SUBNET} ${VPN_NETMASK}
-push "redirect-gateway def1"
-push "dhcp-option DNS 8.8.8.8"
-push "dhcp-option DNS 8.8.4.4"
+ifconfig 10.8.0.1 10.8.0.2
+secret ${OPENVPN_DIR}/static.key
+proto udp
+port 1194
 keepalive 10 120
 persist-key
 persist-tun
+verb 3
 cipher AES-256-CBC
-user nobody
-group nogroup
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+push "redirect-gateway def1"
+EOF
+
+#sudo nano /etc/openvpn/client.ovpn
+# Generate client.conf
+cat <<EOF >${OPENVPN_DIR}/client.conf
+remote ${PUBLIC_IP} 1194
+dev tun
+ifconfig 10.8.0.2 10.8.0.1
+secret ${OPENVPN_DIR}/static.key
+proto udp
+port 1194
+persist-key
+persist-tun
 verb 3
 EOF
 
+# Apply the iptables NAT rule for the detected interface
+iptables -t nat -A POSTROUTING -o ${INTERFACE} -j MASQUERADE
+#iptables-save > /etc/iptables/rules.v4
+sudo netfilter-persistent save
+
 # Enable IP forwarding
+#sudo sysctl -w net.ipv4.ip_forward=1
 echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 sysctl -p
 
-# Set up NAT
-iptables -t nat -A POSTROUTING -s ${VPN_SUBNET}/24 -o ens5 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+# Verifying the Rule
+iptables -t nat -L -v
 
 # Start OpenVPN
 systemctl enable openvpn@server
 systemctl start openvpn@server
 
-# Generate client configuration
-mkdir -p ${OUTPUT_DIR}
-cat <<EOF >${OUTPUT_DIR}/${CLIENT_NAME}.ovpn
-client
-dev tun
-proto udp
-remote ${SERVER_IP} 1194
-resolv-retry infinite
-nobind
-persist-key
-persist-tun
-ca [inline]
-cert [inline]
-key [inline]
-cipher AES-256-CBC
-verb 3
-<ca>
-$(cat ${KEY_DIR}/ca.crt)
-</ca>
-<cert>
-$(cat ${KEY_DIR}/${CLIENT_NAME}.crt)
-</cert>
-<key>
-$(cat ${KEY_DIR}/${CLIENT_NAME}.key)
-</key>
-EOF
-
-echo "OpenVPN setup complete. Client configuration available at: ${OUTPUT_DIR}/${CLIENT_NAME}.ovpn"
+echo "OpenVPN setup complete. Client configuration available at: ${OPENVPN_DIR}/client.conf"

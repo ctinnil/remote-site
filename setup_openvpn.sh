@@ -52,7 +52,7 @@ dev tun
 ifconfig 10.8.0.2 10.8.0.1
 #secret ${OPENVPN_DIR}/static.key
 <secret>
-$(cat /etc/openvpn/server/static.key)
+$(sudo cat /etc/openvpn/server/static.key)
 </secret>
 proto udp
 port 1194

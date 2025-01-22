@@ -57,7 +57,7 @@ verb 3
 EOF
 
 # Apply the iptables NAT rule for the detected interface
-iptables -t nat -A POSTROUTING -o ${INTERFACE} -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o ${INTERFACE} -j MASQUERADE
 #iptables-save > /etc/iptables/rules.v4
 sudo netfilter-persistent save
 
@@ -67,10 +67,10 @@ sudo echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 sudo sysctl -p
 
 # Verifying the Rule
-iptables -t nat -L -v
+sudo iptables -t nat -L -v
 
 # Start OpenVPN
-systemctl enable openvpn@server
-systemctl start openvpn@server
+sudo systemctl enable openvpn@server
+sudo systemctl start openvpn@server
 
 echo "OpenVPN setup complete. Client configuration available at: ${OPENVPN_DIR}/client.conf"

@@ -61,10 +61,20 @@ sudo iptables -t nat -A POSTROUTING -o ${INTERFACE} -j MASQUERADE
 #iptables-save > /etc/iptables/rules.v4
 sudo netfilter-persistent save
 
-# Enable IP forwarding
-#sudo sysctl -w net.ipv4.ip_forward=1
-sudo echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+# Enable IP forwarding immediately
+sudo sysctl -w net.ipv4.ip_forward=1
+
+# Persist the setting by adding/updating it in /etc/sysctl.conf
+if grep -q '^net.ipv4.ip_forward' /etc/sysctl.conf; then
+    sudo sed -i 's/^net.ipv4.ip_forward.*/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+else
+    echo 'net.ipv4.ip_forward=1' | sudo tee -a /etc/sysctl.conf
+fi
+
+# Apply the changes persistently
 sudo sysctl -p
+
+echo "IPv4 forwarding enabled and set persistently."
 
 # Verifying the Rule
 sudo iptables -t nat -L -v

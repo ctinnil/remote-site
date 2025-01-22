@@ -17,8 +17,9 @@ INTERFACE=$(ip route | grep default | awk '{print $5}')
 sudo apt update && sudo apt upgrade -y && sudo apt install openvpn iptables-persistent -y
 
 # Genrate static key 
-openvpn --genkey secret ~/static.key
-sudo mv ~/static.key ${OPENVPN_DIR}/static.key
+#openvpn --genkey secret ~/static.key
+#sudo mv ~/static.key ${OPENVPN_DIR}/static.key
+sudo openvpn --genkey secret ${OPENVPN_DIR}/static.key
 
 # Set correct permissions
 sudo chown root:root ${OPENVPN_DIR}/static.key
@@ -26,7 +27,7 @@ sudo chmod 600 ${OPENVPN_DIR}/static.key
 
 #sudo nano /etc/openvpn/server.conf
 # Generate server.conf
-cat <<EOF >${OPENVPN_DIR}/server.conf
+sudo tee ${OPENVPN_DIR}/server.conf > /dev/null <<EOF
 dev tun
 ifconfig 10.8.0.1 10.8.0.2
 secret ${OPENVPN_DIR}/static.key
@@ -43,8 +44,9 @@ push "redirect-gateway def1"
 EOF
 
 #sudo nano /etc/openvpn/client.ovpn
-# Generate client.conf
-cat <<EOF >${OPENVPN_DIR}/client.conf
+# Generate client.ovpn
+sudo tee ${OPENVPN_DIR}/client.ovpn > /dev/null <<EOF
+cat <<EOF >${OPENVPN_DIR}/client.ovpn
 remote ${PUBLIC_IP} 1194
 dev tun
 ifconfig 10.8.0.2 10.8.0.1
@@ -83,4 +85,4 @@ sudo iptables -t nat -L -v
 sudo systemctl enable openvpn@server
 sudo systemctl start openvpn@server
 
-echo "OpenVPN setup complete. Client configuration available at: ${OPENVPN_DIR}/client.conf"
+echo "OpenVPN setup complete. Client configuration available at: ${OPENVPN_DIR}/client.ovpn"

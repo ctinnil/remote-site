@@ -57,7 +57,11 @@ proto udp
 port 1194
 persist-key
 persist-tun
+cipher AES-256-CBC
+redirect-gateway def1
 verb 3
+dhcp-option DNS 8.8.8.8
+dhcp-option DNS 8.8.4.4
 EOF
 
 # Apply the iptables NAT rule for the detected interface

@@ -46,7 +46,6 @@ EOF
 #sudo nano /etc/openvpn/client.ovpn
 # Generate client.ovpn
 sudo tee ${OPENVPN_DIR}/client.ovpn > /dev/null <<EOF
-cat <<EOF >${OPENVPN_DIR}/client.ovpn
 remote ${PUBLIC_IP} 1194
 dev tun
 ifconfig 10.8.0.2 10.8.0.1

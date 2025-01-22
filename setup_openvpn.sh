@@ -63,8 +63,8 @@ sudo netfilter-persistent save
 
 # Enable IP forwarding
 #sudo sysctl -w net.ipv4.ip_forward=1
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-sysctl -p
+sudo echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+sudo sysctl -p
 
 # Verifying the Rule
 iptables -t nat -L -v

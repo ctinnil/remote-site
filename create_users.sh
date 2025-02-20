@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if the openvpn-install.sh script exists
-OPENVPN_SCRIPT="/mnt/data/openvpn-install.sh"
+OPENVPN_SCRIPT="openvpn-install.sh"
 if [[ ! -f "$OPENVPN_SCRIPT" ]]; then
     echo "Error: OpenVPN installation script not found at $OPENVPN_SCRIPT."
     exit 1
@@ -37,7 +37,10 @@ for i in $(seq 1 $USER_COUNT); do
     fi
 
     echo "Creating OpenVPN user: $USERNAME"
-    echo -e "${USERNAME}\n${PASSWORD}" | sudo bash "$OPENVPN_SCRIPT"
+    {
+        echo "$USERNAME"
+        [[ -n "$PASSWORD" ]] && echo "$PASSWORD"
+    } | sudo bash "$OPENVPN_SCRIPT" --batch
     
     # Save to CSV file
     echo "$USERNAME,$PASSWORD" >> "$CSV_FILE"

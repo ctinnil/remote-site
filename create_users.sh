@@ -37,10 +37,11 @@ for i in $(seq 1 $USER_COUNT); do
     fi
 
     echo "Creating OpenVPN user: $USERNAME"
-    {
-        echo "$USERNAME"
-        [[ -n "$PASSWORD" ]] && echo "$PASSWORD"
-    } | sudo bash "$OPENVPN_SCRIPT" --batch
+    sudo bash "$OPENVPN_SCRIPT" <<EOF
+    y   # Confirm execution
+    $USERNAME  # Client name
+    1   # No password option
+EOF
     
     # Save to CSV file
     echo "$USERNAME,$PASSWORD" >> "$CSV_FILE"
